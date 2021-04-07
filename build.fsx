@@ -1,6 +1,6 @@
 #r "paket:
 nuget Fake.Core.Target
-nuget Fake.DotNet.Cli 
+nuget Fake.DotNet.Cli
 nuget Fake.Tools.Git
 nuget Fake.DotNet.AssemblyInfoFile
 nuget Fake.Core.ReleaseNotes
@@ -146,15 +146,15 @@ Target.create "AssemblyInfo" (fun _ ->
           AssemblyInfo.Description summary
           AssemblyInfo.Version release.AssemblyVersion
           AssemblyInfo.FileVersion release.AssemblyVersion ]
-          
+
     let internalsVisibility (fsproj: string) =
         match fsproj with
-        | f when f.EndsWith "FSharp.Data.GraphQL.Shared.fsproj" -> 
+        | f when f.EndsWith "FSharp.Data.GraphQL.Shared.fsproj" ->
             [ AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Server"
               AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Client"
               AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Client.DesignTime"
               AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Tests" ]
-        | f when f.EndsWith "FSharp.Data.GraphQL.Server.fsproj" -> 
+        | f when f.EndsWith "FSharp.Data.GraphQL.Server.fsproj" ->
             [ AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Benchmarks"
               AssemblyInfo.InternalsVisibleTo "FSharp.Data.GraphQL.Tests" ]
         | _ -> []
@@ -215,9 +215,9 @@ Target.create "Build" (fun _ ->
     !! "src/**/*.??proj"
     -- "src/**/*.shproj"
     |> Seq.iter (DotNet.build (fun options ->
-        { options with 
+        { options with
             Configuration = DotNet.BuildConfiguration.Release
-            Common = { options.Common with 
+            Common = { options.Common with
                         CustomParams = Some "--no-restore" } })))
 
 /// The path to the .NET CLI executable.
@@ -228,9 +228,9 @@ Target.create "RunTests" (fun _ ->
         DotNet.restore id
     let build =
         DotNet.build (fun options ->
-        { options with 
+        { options with
             Configuration = DotNet.BuildConfiguration.Release
-            Common = { options.Common with 
+            Common = { options.Common with
                         CustomParams = Some "--no-restore" } })
     let runTests (project : string) =
         restore project
@@ -262,7 +262,7 @@ Target.create "RunTests" (fun _ ->
         |> CreateProcess.withOutputEventsNotNull stdHandler errHandler
         |> Proc.start
         |> ignore // FAKE automatically kills all started processes at the end of the script, so we don't need to worry about finishing them
-        if not (waiter.WaitOne(TimeSpan.FromMinutes(float 2)))
+        if not (waiter.WaitOne(TimeSpan.FromMinutes(float 5)))
         then failwithf "Timeout while waiting for %s server to run. Can not run integration tests." projectName
     runTests "tests/FSharp.Data.GraphQL.Tests/FSharp.Data.GraphQL.Tests.fsproj"
     startServer ("samples" </> "star-wars-api" </> "FSharp.Data.GraphQL.Samples.StarWarsApi.fsproj")
@@ -501,9 +501,9 @@ let makeRelease draft owner project version prerelease (notes:seq<string>) (clie
             DraftRelease = draft }
     }
 
-let createDraft owner project version prerelease notes client = 
+let createDraft owner project version prerelease notes client =
     makeRelease true owner project version prerelease notes client
-    
+
 let releaseDraft (draft : Async<Draft>) =
     retryWithArg 5 draft <| fun draft' -> async {
         let update = draft'.DraftRelease.ToUpdate()
@@ -513,7 +513,7 @@ let releaseDraft (draft : Async<Draft>) =
     }
 
 Target.create "Release" (fun _ ->
-    let user = 
+    let user =
         match Environment.environVarOrDefault "github-user" System.String.Empty with
         | s when not (String.IsNullOrWhiteSpace s) -> s
         | _ -> UserInput.getUserInput "Username: "
@@ -559,10 +559,10 @@ let pack id =
 let publishPackage id =
     pack id
     Paket.push(fun p ->
-        { p with 
+        { p with
             WorkingDir = sprintf "nuget/%s.%s" project id
             PublishUrl = "https://www.nuget.org/api/v2/package" })
-    
+
 Target.create "PublishServer" (fun _ ->
     publishPackage "Server"
 )
