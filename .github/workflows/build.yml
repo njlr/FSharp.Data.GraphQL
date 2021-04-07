@@ -1,0 +1,29 @@
+name: Build
+
+on: [ push ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Setup .NET Core SDK 3.1.x
+      uses: actions/setup-dotnet@v1.7.2
+      with:
+        dotnet-version: 3.1.x
+
+    - name: Setup .NET Core SDK 5.0.x
+      uses: actions/setup-dotnet@v1.7.2
+      with:
+        dotnet-version: 5.0.x
+
+    - uses: actions/checkout@v2
+
+    - name: Build
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: true
+        DOTNET_NOLOGO: true
+        NODE_ENVIRONMENT: production
+      run: |
+        ./build.sh
