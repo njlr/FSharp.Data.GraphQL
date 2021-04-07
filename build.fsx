@@ -246,6 +246,7 @@ Target.create "RunTests" (fun _ ->
         let projectName = Path.GetFileNameWithoutExtension(serverProject)
         let serverExe = "bin" </> "Release" </> "netcoreapp3.1" </> (projectName + ".dll")
         let stdHandler (msg : string) =
+            printfn "%s: %s" projectName msg
             let expectedMessage = "Application started. Press Ctrl+C to shut down.".ToLowerInvariant()
             if msg.ToLowerInvariant().Contains(expectedMessage)
             then waiter.Set() |> ignore
