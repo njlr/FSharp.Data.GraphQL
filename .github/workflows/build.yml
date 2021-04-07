@@ -19,6 +19,6 @@ jobs:
       env:
         DOTNET_CLI_TELEMETRY_OPTOUT: true
         DOTNET_NOLOGO: true
-        NODE_ENVIRONMENT: production
+        FAKE_DETAILED_ERRORS: true
       run: |
         ./build.sh
