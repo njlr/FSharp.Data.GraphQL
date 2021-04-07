@@ -1,12 +1,13 @@
 name: Build
 
-on: [ push ]
+on: [ pull_request ]
 
 jobs:
 
   build:
     runs-on: ubuntu-20.04
 
+    steps:
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v1.7.2
       with:
@@ -14,10 +15,11 @@ jobs:
 
     - uses: actions/checkout@v2
 
-    - name: Build
+    - name: Build and test
       env:
         DOTNET_CLI_TELEMETRY_OPTOUT: true
         DOTNET_NOLOGO: true
         NODE_ENVIRONMENT: production
       run: |
-        ./build.sh
+        ./build_all.sh
+        dotnet test
