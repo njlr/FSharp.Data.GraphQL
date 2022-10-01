@@ -140,6 +140,23 @@ module Auto =
         ]
         |> Map.ofSeq
         |> ObjectValue
+    else if typ.IsEnum then
+      let enumType = Enum.GetUnderlyingType(typ).FullName
+
+      if enumType = typeof<sbyte>.FullName then
+        fun (v : obj) -> IntValue (box v :?> sbyte |> int64)
+      elif enumType = typeof<byte>.FullName then
+        fun (v : obj) -> IntValue (box v :?> byte |> int64)
+      elif enumType = typeof<int16>.FullName then
+        fun (v : obj) -> IntValue (box v :?> int16 |> int64)
+      elif enumType = typeof<uint16>.FullName then
+        fun (v : obj) -> IntValue (box v :?> uint16 |> int64)
+      elif enumType = typeof<int>.FullName then
+        fun (v : obj) -> IntValue (box v :?> int |> int64)
+      elif enumType = typeof<uint32>.FullName then
+        fun (v : obj) -> IntValue (box v :?> uint32 |> int64)
+      else
+        failwith $"Unsupported underlying enum type {enumType}"
     else
       // This behaviour is likely not what the user wants.
       // However, if they are not using standard F# constructs then

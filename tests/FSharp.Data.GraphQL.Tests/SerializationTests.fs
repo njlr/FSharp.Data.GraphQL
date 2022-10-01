@@ -94,3 +94,16 @@ let ``Auto generateSerializer works for Map<string, _>``() =
     ]
 
   serializer m |> equals (ObjectValue (Map.ofSeq [ "abc", IntValue 123; "def", IntValue 456 ]))
+
+type private TrafficLight =
+  | Red = 0
+  | Amber = 1
+  | Green = 2
+
+[<Fact>]
+let ``Auto generateSerializer works for enums``() =
+  let serializer = Auto.generateSerializer<TrafficLight> ()
+
+  serializer TrafficLight.Red |> equals (IntValue 0)
+  serializer TrafficLight.Amber |> equals (IntValue 1)
+  serializer TrafficLight.Green |> equals (IntValue 2)
