@@ -548,7 +548,7 @@ and InputDef =
     interface
         inherit TypeDef
 
-        /// Serialzies the associated .NET CLR type into a GQL value
+        /// Serializes the associated .NET CLR type into a GQL value
         abstract member Serialize : obj -> Ast.Value
     end
 
