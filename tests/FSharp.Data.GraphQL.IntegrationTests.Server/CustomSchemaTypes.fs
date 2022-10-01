@@ -24,9 +24,18 @@ module SchemaDefinitions =
         | :? File as file -> Some file
         | _ -> None
 
+    let private serialize (file : File) =
+        [
+          "Name", StringValue file.Name
+          "ContentType", StringValue file.ContentType
+        ]
+        |> Map.ofSeq
+        |> ObjectValue
+
     /// GraphQL type for binary data stream representation.
     let Upload : ScalarDefinition<File> =
         { Name = "Upload"
           Description = Some "The `Upload` type represents an upload of binary data."
           CoerceInput = coerceUploadInput
-          CoerceValue = coerceUploadValue }
+          CoerceValue = coerceUploadValue
+          Serialize = serialize }

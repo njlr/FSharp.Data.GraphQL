@@ -319,6 +319,11 @@ module internal Internal =
     whitespaces >>. definitions .>> (skipMany ignored <|> eof)
     |>> (fun definitions -> { Document.Definitions = definitions })
 
+/// Trys to parse a GraphQL Input Value.
+let tryParseValue query =
+  match run inputValue query with
+  | Success(result, _, _) -> Result.Ok result
+  | Failure(errorMsg, _, _) -> Result.Error errorMsg
 
 /// Parses a GraphQL Document. Throws exception on invalid formats.
 let parse query =

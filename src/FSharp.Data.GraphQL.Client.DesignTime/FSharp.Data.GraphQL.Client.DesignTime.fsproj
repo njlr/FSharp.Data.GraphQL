@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\FSharp.Data.GraphQL.Shared\TextConversions.fs" />
+    <Compile Include="..\FSharp.Data.GraphQL.Shared\JsonValue.fs" />
     <Compile Include="..\FSharp.Data.GraphQL.Client\MimeTypes.fs" />
-    <Compile Include="..\FSharp.Data.GraphQL.Client\TextConversions.fs" />
-    <Compile Include="..\FSharp.Data.GraphQL.Client\JsonValue.fs" />
     <Compile Include="..\FSharp.Data.GraphQL.Client\Extensions.fs" />
     <Compile Include="..\FSharp.Data.GraphQL.Client\Schema.fs" />
     <Compile Include="..\FSharp.Data.GraphQL.Client\ReflectionPatterns.fs" />

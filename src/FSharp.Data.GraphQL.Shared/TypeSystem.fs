@@ -10,6 +10,7 @@ open System.Collections.Generic
 open FSharp.Data.GraphQL
 open FSharp.Data.GraphQL.Validation
 open FSharp.Data.GraphQL.Ast
+open FSharp.Data.GraphQL.Serialization
 open FSharp.Data.GraphQL.Extensions
 open FSharp.Quotations
 open FSharp.Quotations.Patterns
@@ -546,6 +547,9 @@ and TypeDef<'Val> =
 and InputDef =
     interface
         inherit TypeDef
+
+        /// Serialzies the associated .NET CLR type into a GQL value
+        abstract member Serialize : obj -> Ast.Value
     end
 
 /// Representation of all type defintions, that can be uses as inputs.
@@ -1007,7 +1011,9 @@ and [<CustomEquality; NoComparison>] ScalarDefinition<'Val> =
       CoerceInput : Value -> 'Val option
       /// A function used to set a surrogate representation to be
       /// returned as a query result.
-      CoerceValue : obj -> 'Val option }
+      CoerceValue : obj -> 'Val option
+
+      Serialize : 'Val -> Value }
 
     interface TypeDef with
         member _.Type = typeof<'Val>
@@ -1020,7 +1026,9 @@ and [<CustomEquality; NoComparison>] ScalarDefinition<'Val> =
             let list: ListOfDefinition<_,_> = { OfType = x }
             upcast list
 
-    interface InputDef
+    interface InputDef with
+        member this.Serialize (x : obj) = this.Serialize (x :?> 'Val)
+
     interface OutputDef
 
     interface ScalarDef with
@@ -1115,8 +1123,11 @@ and internal EnumDefinition<'Val> =
       /// Optional enum type description.
       Description : string option
       /// List of available enum cases.
-      Options : EnumValue<'Val> [] }
-    interface InputDef
+      Options : EnumValue<'Val> []
+      Serialize : 'Val -> Value }
+    interface InputDef with
+        member this.Serialize (x : obj) = this.Serialize (x :?> 'Val)
+
     interface OutputDef
 
     interface TypeDef with
@@ -1435,7 +1446,12 @@ and ListOfDef<'Val, 'Seq when 'Seq :> 'Val seq> =
 
 and internal ListOfDefinition<'Val, 'Seq when 'Seq :> 'Val seq> =
     { OfType : TypeDef<'Val> }
-    interface InputDef
+    interface InputDef with
+        member this.Serialize (x : obj) =
+            (x :?> 'Seq)
+            |> Seq.map (this.OfType :?> InputDef).Serialize
+            |> Seq.toList
+            |> Value.ListValue
 
     interface TypeDef with
         member _.Type = typeof<'Seq>
@@ -1484,7 +1500,17 @@ and NullableDef<'Val> =
 
 and internal NullableDefinition<'Val> =
     { OfType : TypeDef<'Val> }
-    interface InputDef
+    interface InputDef with
+        member this.Serialize (x : obj) =
+            match x with
+            | null -> Value.NullValue
+            | :? ('Val option) as opt ->
+                match opt with
+                | Some x ->
+                    (this.OfType :?> InputDef).Serialize(x)
+                | None -> Value.NullValue
+            | _ ->
+                (this.OfType :?> InputDef).Serialize (x :?> 'Val)
 
     interface TypeDef with
         member _.Type = typeof<'Val option>
@@ -1530,8 +1556,11 @@ and InputObjectDefinition<'Val> =
       Description : string option
       /// Lazy resolver for the input object fields. It must be lazy in
       /// order to allow self-recursive type references.
-      Fields : Lazy<InputFieldDef[]> }
-    interface InputDef
+      Fields : Lazy<InputFieldDef[]>
+      Serialize : 'Val -> Value }
+    interface InputDef with
+        member this.Serialize(x : obj) =
+            this.Serialize(x :?> 'Val)
 
     interface InputObjectDef with
         member x.Name = x.Name
@@ -2536,7 +2565,8 @@ module SchemaDefinitions =
               Some
                   "The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."
           CoerceInput = coerceIntInput
-          CoerceValue = coerceIntValue }
+          CoerceValue = coerceIntValue
+          Serialize = fun (x : int) -> IntValue (int64 x) }
 
     /// GraphQL type of long
     let Long : ScalarDefinition<int64> =
@@ -2545,14 +2575,16 @@ module SchemaDefinitions =
               Some
                   "The `Long` scalar type represents non-fractional signed whole numeric values. Long can represent values between -(2^63) and 2^63 - 1."
           CoerceInput = coerceLongInput
-          CoerceValue = coerceLongValue }
+          CoerceValue = coerceLongValue
+          Serialize = fun x -> IntValue x }
 
     /// GraphQL type of boolean
     let Boolean : ScalarDefinition<bool> =
         { Name = "Boolean"
           Description = Some "The `Boolean` scalar type represents `true` or `false`."
           CoerceInput = coerceBoolInput
-          CoerceValue = coerceBoolValue }
+          CoerceValue = coerceBoolValue
+          Serialize = fun x -> BooleanValue x }
 
     /// GraphQL type of float
     let Float : ScalarDefinition<double> =
@@ -2561,7 +2593,8 @@ module SchemaDefinitions =
               Some
                   "The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."
           CoerceInput = coerceFloatInput
-          CoerceValue = coerceFloatValue }
+          CoerceValue = coerceFloatValue
+          Serialize = fun x -> FloatValue x }
 
     /// GraphQL type of string
     let String : ScalarDefinition<string> =
@@ -2570,7 +2603,8 @@ module SchemaDefinitions =
               Some
                   "The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."
           CoerceInput = coerceStringInput
-          CoerceValue = coerceStringValue }
+          CoerceValue = coerceStringValue
+          Serialize = fun x -> StringValue x }
 
     /// GraphQL type for custom identifier
     let ID<'Val> : ScalarDefinition<'Val> =
@@ -2579,16 +2613,18 @@ module SchemaDefinitions =
               Some
                   "The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `\"4\"`) or integer (such as `4`) input value will be accepted as an ID."
           CoerceInput = coerceIdInput
-          CoerceValue = coerceIDValue }
+          CoerceValue = coerceIDValue
+          Serialize = fun x -> StringValue (string x) }
 
-    let Obj : ScalarDefinition<obj> = {
+    let Obj : ScalarDefinition<obj> =
+        {
             Name = "Object"
             Description =
                Some
                   "The `Object` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."
             CoerceInput = (fun (o: Value) -> Some (o:>obj))
             CoerceValue = (fun (o: obj) -> Some (o))
-        }
+            Serialize = fun x -> StringValue (string x) }
 
     /// GraphQL type for System.Uri
     let Uri : ScalarDefinition<Uri> =
@@ -2597,7 +2633,8 @@ module SchemaDefinitions =
               Some
                   "The `URI` scalar type represents a string resource identifier compatible with URI standard. The URI type appears in a JSON response as a String."
           CoerceInput = coerceUriInput
-          CoerceValue = coerceUriValue }
+          CoerceValue = coerceUriValue
+          Serialize = fun x -> StringValue (string x) }
 
     /// GraphQL type for System.DateTime
     let Date : ScalarDefinition<DateTime> =
@@ -2606,7 +2643,8 @@ module SchemaDefinitions =
               Some
                   "The `Date` scalar type represents a Date value with Time component. The Date type appears in a JSON response as a String representation compatible with ISO-8601 format."
           CoerceInput = coerceDateInput
-          CoerceValue = coerceDateValue }
+          CoerceValue = coerceDateValue
+          Serialize = fun (x : DateTime) -> StringValue (x.ToString("o", CultureInfo.InvariantCulture)) }
 
     /// GraphQL type for System.Guid
     let Guid : ScalarDefinition<Guid> =
@@ -2615,7 +2653,8 @@ module SchemaDefinitions =
               Some
                   "The `Guid` scalar type represents a Globaly Unique Identifier value. It's a 128-bit long byte key, that can be serialized to string."
           CoerceInput = coerceGuidInput
-          CoerceValue = coerceGuidValue }
+          CoerceValue = coerceGuidValue
+          Serialize = fun x -> StringValue (string x) }
 
     /// GraphQL @include directive.
     let IncludeDirective : DirectiveDef =
@@ -2690,11 +2729,12 @@ module SchemaDefinitions =
         /// <param name="coerceValue">Function used to cross cast to .NET types.</param>
         /// <param name="description">Optional scalar description. Usefull for generating documentation.</param>
         static member Scalar(name : string, coerceInput : Value -> 'T option,
-                             coerceValue : obj -> 'T option, ?description : string) : ScalarDefinition<'T> =
+                             coerceValue : obj -> 'T option, ?description : string, ?serialize : 'T -> Value) : ScalarDefinition<'T> =
             { Name = name
               Description = description
               CoerceInput = coerceInput
-              CoerceValue = coerceValue }
+              CoerceValue = coerceValue
+              Serialize = serialize |> Option.defaultWith Auto.generateSerializer }
 
         /// <summary>
         /// Creates GraphQL type definition for user defined enums.
@@ -2702,10 +2742,19 @@ module SchemaDefinitions =
         /// <param name="name">Type name. Must be unique in scope of the current schema.</param>
         /// <param name="options">List of enum value cases.</param>
         /// <param name="description">Optional enum description. Usefull for generating documentation.</param>
-        static member Enum(name : string, options : EnumValue<'Val> list, ?description : string) : EnumDef<'Val> =
-            upcast { EnumDefinition.Name = name
-                     Description = description
-                     Options = options |> List.toArray }
+        static member Enum(name : string, options : EnumValue<'Val> list, ?description : string, ?serialize : 'Val -> Value) : EnumDef<'Val> =
+            upcast {
+                EnumDefinition.Name = name
+                Description = description
+                Options = options |> List.toArray
+                Serialize =
+                    serialize
+                    |> Option.defaultWith
+                        (fun () v ->
+                            options
+                            |> List.find (fun o -> o.Value = v)
+                            |> fun o -> EnumValue o.Name)
+            }
 
         /// <summary>
         /// Creates a single enum option to be used as argument in <see cref="Schema.Enum"/>.
@@ -2783,10 +2832,11 @@ module SchemaDefinitions =
         /// Function which generates a list of input fields defined by the current input object. Useful, when object defines recursive dependencies.
         /// </param>
         /// <param name="description">Optional input object description. Useful for generating documentation.</param>
-        static member InputObject(name : string, fieldsFn : unit -> InputFieldDef list, ?description : string) : InputObjectDefinition<'Out> =
+        static member InputObject(name : string, fieldsFn : unit -> InputFieldDef list, ?description : string, ?serialize : 'Out -> Value) : InputObjectDefinition<'Out> =
             { Name = name
               Fields = lazy (fieldsFn () |> List.toArray)
-              Description = description }
+              Description = description
+              Serialize = serialize |> Option.defaultWith Auto.generateSerializer }
 
         /// <summary>
         /// Creates a custom GraphQL input object type. Unlike GraphQL objects, input objects are valid input types,
@@ -2796,10 +2846,11 @@ module SchemaDefinitions =
         /// <param name="name">Type name. Must be unique in scope of the current schema.</param>
         /// <param name="fields">List of input fields defined by the current input object. </param>
         /// <param name="description">Optional input object description. Useful for generating documentation.</param>
-        static member InputObject(name : string, fields : InputFieldDef list, ?description : string) : InputObjectDefinition<'Out> =
+        static member InputObject(name : string, fields : InputFieldDef list, ?description : string, ?serialize : 'Out -> Value) : InputObjectDefinition<'Out> =
             { Name = name
               Description = description
-              Fields = lazy (fields |> List.toArray) }
+              Fields = lazy (fields |> List.toArray)
+              Serialize = serialize |> Option.defaultWith Auto.generateSerializer }
 
         /// <summary>
         /// Creates the top level subscription object that holds all of the possible subscriptions as fields.
@@ -2822,14 +2873,14 @@ module SchemaDefinitions =
         /// <param name="args">Optional list of arguments used to parametrize field resolution.</param>
         /// <param name="deprecationReason">If set, marks current field as deprecated.</param>
         static member AutoField(name : string, typedef : #OutputDef<'Res>, ?description: string, ?args: InputFieldDef list, ?deprecationReason: string) : FieldDef<'Val> =
-            upcast { FieldDefinition.Name = name
-                     Description = description
-                     TypeDef = typedef
-                     Resolve = Resolve.defaultResolve<'Val, 'Res> name
-                     Args = defaultArg args [] |> Array.ofList
-                     DeprecationReason = deprecationReason
-                     Metadata = Metadata.Empty
-                     }
+            upcast {
+                FieldDefinition.Name = name
+                Description = description
+                TypeDef = typedef
+                Resolve = Resolve.defaultResolve<'Val, 'Res> name
+                Args = defaultArg args [] |> Array.ofList
+                DeprecationReason = deprecationReason
+                Metadata = Metadata.Empty }
 
         /// <summary>
         /// Creates field defined inside interfaces. When used for objects may cause runtime exceptions due to

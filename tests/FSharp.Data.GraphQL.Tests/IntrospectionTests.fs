@@ -40,7 +40,7 @@ let inputFieldQuery = """{
 let ``Input field should be marked as nullable when defaultValue is provided`` () =
     let root = Define.Object("Query", [
         Define.Field("onlyField", String, "The only field", [
-            Define.Input("in", String, defaultValue = "1")
+            Define.Input("in", String, defaultValue = "this is a default value")
         ], fun _ _ -> "Only value")
     ])
     let schema = Schema(root)
@@ -57,7 +57,7 @@ let ``Input field should be marked as nullable when defaultValue is provided`` (
                                 "kind", upcast "SCALAR"
                                 "name", upcast "String"
                             ]
-                            "defaultValue", upcast "1"
+                            "defaultValue", upcast "\"this is a default value\""
                         ]
                     ]
                 ]
@@ -159,7 +159,7 @@ let ``Input field should be marked as nullable when its type is nullable and hav
                                 "kind", upcast "SCALAR"
                                 "name", upcast "String"
                             ]
-                            "defaultValue", upcast "1"
+                            "defaultValue", upcast "\"1\""
                         ]
                     ]
                 ]
@@ -888,7 +888,7 @@ let ``Introspection executes an introspection query`` () =
                                                      "kind", upcast "SCALAR"
                                                      "name", upcast "Boolean"
                                                      "ofType", null]
-                                                   "defaultValue", upcast "False"];]
+                                                   "defaultValue", upcast "false"];]
                                       "type", upcast NameValueLookup.ofList [
                                               "kind", upcast "LIST"
                                               "name", null
@@ -912,7 +912,7 @@ let ``Introspection executes an introspection query`` () =
                                                      "kind", upcast "SCALAR"
                                                      "name", upcast "Boolean"
                                                      "ofType", null]
-                                                   "defaultValue", upcast "False"];]
+                                                   "defaultValue", upcast "false"];]
                                       "type", upcast NameValueLookup.ofList [
                                               "kind", upcast "LIST"
                                               "name", null
@@ -1392,4 +1392,4 @@ let ``Introspection executes an introspection query`` () =
     | Direct(data, errors) ->
       empty errors
       data.["data"] |> equals (upcast expected)
-    | _ -> fail "Expected Direct GQResponse"
+    | _ -> fail "Expected Direct GQLResponse"
