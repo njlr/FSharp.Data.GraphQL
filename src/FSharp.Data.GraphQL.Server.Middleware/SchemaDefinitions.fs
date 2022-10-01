@@ -88,6 +88,9 @@ module SchemaDefinitions =
         | :? ObjectListFilter as x -> Some x
         | _ -> None
 
+    let serialize (x : ObjectListFilter) : Value =
+        StringValue (string x) // TODO
+
     /// Defines an object list filter for use as an argument for filter list of object fields.
     let ObjectListFilter : ScalarDefinition<ObjectListFilter> =
         { Name = "ObjectListFilter"
@@ -95,4 +98,5 @@ module SchemaDefinitions =
               Some
                   "The `Filter` scalar type represents a filter on one or more fields of an object in an object list. The filter is represented by a JSON object where the fields are the complemented by specific suffixes to represent a query."
           CoerceInput = coerceObjectListFilterInput
-          CoerceValue = coerceObjectListFilterValue }
+          CoerceValue = coerceObjectListFilterValue
+          Serialize = serialize }

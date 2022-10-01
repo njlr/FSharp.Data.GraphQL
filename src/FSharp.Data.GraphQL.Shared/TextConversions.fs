@@ -6,7 +6,7 @@
 // A simple F# portable parser for JSON data
 // --------------------------------------------------------------------------------------
 
-namespace FSharp.Data.GraphQL.Client
+namespace FSharp.Data.GraphQL
 
 open System
 open System.Globalization

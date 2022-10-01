@@ -5,11 +5,14 @@ namespace FSharp.Data.GraphQL
 
 open System.Collections.Generic
 open System.Reactive.Linq
+open FSharp.Data.GraphQL
+open FSharp.Data.GraphQL.Ast
 open FSharp.Data.GraphQL.Types
 open FSharp.Data.GraphQL.Types.Patterns
 open FSharp.Data.GraphQL.Types.Introspection
 open FSharp.Data.GraphQL.Introspection
 open FSharp.Data.GraphQL.Helpers
+open FSharp.Data.GraphQL.Serialization
 open System.Reactive.Subjects
 
 type private Channel = ISubject<obj>
@@ -213,11 +216,10 @@ type Schema<'Root> (query: ObjectDef<'Root>, ?mutation: ObjectDef<'Root>, ?subsc
         | _ -> failwithf "Unexpected value of typedef: %O" typedef
 
     let introspectInput (namedTypes: Map<string, IntrospectionTypeRef>) (inputDef: InputFieldDef) : IntrospectionInputVal =
-        // We need this so a default value that is an option is not printed as "Some"
-        let stringify =
-            function
-            | ObjectOption x -> string x
-            | x -> string x
+        let stringify (x : obj) =
+            inputDef.TypeDef.Serialize(x)
+            |> Value.serialize
+
         { Name = inputDef.Name
           Description = inputDef.Description
           Type = introspectTypeRef (Option.isSome inputDef.DefaultValue) namedTypes inputDef.TypeDef
