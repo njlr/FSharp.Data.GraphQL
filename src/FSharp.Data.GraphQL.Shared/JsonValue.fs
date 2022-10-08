@@ -35,8 +35,8 @@ type JsonValue =
   | Integer of int
   | String of string
   | Float of float
-  | Record of properties:(string * JsonValue)[]
-  | Array of elements:JsonValue[]
+  | Record of properties:(string * JsonValue)[] // TODO: Use ImmutableArray
+  | Array of elements:JsonValue[] // TODO: Use ImmutableArray
   | Boolean of bool
   | Null
 

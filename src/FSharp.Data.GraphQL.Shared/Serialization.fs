@@ -7,32 +7,28 @@ open FSharp.Data.GraphQL.Ast
 [<RequireQualifiedAccess>]
 module Value =
 
-  let rec toJsonValue (v : Ast.Value) : JsonValue =
-    match v with
-    | NullValue -> JsonValue.Null
-    | IntValue i ->
-      if i > int64 Int32.MaxValue || i < int64 Int32.MinValue then
-        JsonValue.Float (float i)
-      else
-        JsonValue.Integer (int i)
-    | FloatValue f -> JsonValue.Float f
-    | BooleanValue b -> JsonValue.Boolean b
-    | StringValue s -> JsonValue.String s
-    | EnumValue s -> JsonValue.String s
-    | ListValue xs ->
-      xs
-      |> Seq.map toJsonValue
-      |> Array.ofSeq
-      |> JsonValue.Array
-    | ObjectValue m ->
-      m
-      |> Map.toSeq
-      |> Seq.map (fun (k, v) -> k, toJsonValue v)
-      |> Array.ofSeq
-      |> JsonValue.Record
-    | Variable x -> JsonValue.String x
+    let rec toJsonValue (v : Ast.Value) : JsonValue =
+        match v with
+        | NullValue -> JsonValue.Null
+        | IntValue i ->
+            if i > int64 Int32.MaxValue || i < int64 Int32.MinValue then
+                JsonValue.Float (float i)
+            else
+                JsonValue.Integer (int i)
+        | FloatValue f -> JsonValue.Float f
+        | BooleanValue b -> JsonValue.Boolean b
+        | StringValue s -> JsonValue.String s
+        | EnumValue s -> JsonValue.String s
+        | ListValue xs -> xs |> Seq.map toJsonValue |> Array.ofSeq |> JsonValue.Array
+        | ObjectValue m ->
+            m
+            |> Map.toSeq
+            |> Seq.map (fun (k, v) -> k, toJsonValue v)
+            |> Seq.toArray
+            |> JsonValue.Record
+        | Variable x -> JsonValue.String x
 
-  let serialize v = (toJsonValue v).ToString(JsonSaveOptions.None)
+    let serialize v = (toJsonValue v).ToString (JsonSaveOptions.None)
 
 module Auto =
 
