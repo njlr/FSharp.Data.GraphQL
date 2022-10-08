@@ -1,12 +1,9 @@
 module FSharp.Data.GraphQL.Tests.SubscriptionTests
 
 open Xunit
-open FSharp.Control
 open FSharp.Data.GraphQL
 open FSharp.Data.GraphQL.Parser
 open FSharp.Data.GraphQL.Execution
-open System.Threading
-open System.Collections.Concurrent
 open FSharp.Data.GraphQL.Types
 
 type Value =
