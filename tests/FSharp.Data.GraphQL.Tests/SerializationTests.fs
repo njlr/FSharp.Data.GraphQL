@@ -107,3 +107,108 @@ let ``Auto generateSerializer works for enums``() =
   serializer TrafficLight.Red |> equals (IntValue 0)
   serializer TrafficLight.Amber |> equals (IntValue 1)
   serializer TrafficLight.Green |> equals (IntValue 2)
+
+type Foo =
+  {
+    Bar : int
+    Qux : string
+  }
+
+[<Fact>]
+let ``Auto generateSerializer works for records``() =
+  let serializer = Auto.generateSerializer<Foo> ()
+
+  let foo =
+    {
+      Bar = 123
+      Qux = "abc"
+    }
+
+  let expected =
+    ObjectValue (
+      Map.ofSeq
+        [
+          "Bar", IntValue 123;
+          "Qux", StringValue "abc"
+        ]
+      )
+
+  serializer foo |> equals expected
+
+type Tree =
+  {
+    Value : int
+    Left : Tree option
+    Right : Tree option
+  }
+
+[<Fact>]
+let ``Auto generateSerializer works for recursive records``() =
+  let serializer = Auto.generateSerializer<Tree> ()
+
+  let leaf v =
+    {
+      Value = v
+      Left = None
+      Right = None
+    }
+
+  let tree =
+      {
+        leaf 1 with
+          Right =
+            Some
+              {
+                leaf 2 with
+                  Left =
+                    Some
+                      {
+                        leaf 3 with
+                          Left = Some (leaf 4)
+                          Right = Some (leaf 5)
+                      }
+                  Right = Some (leaf 6)
+              }
+      }
+
+  let expected =
+    ObjectValue
+      (Map.ofSeq [
+        "Left", NullValue
+        "Right",
+          ObjectValue
+            (Map.ofSeq [
+              "Left",
+                ObjectValue
+                  (Map.ofSeq [
+                    "Left",
+                      ObjectValue
+                        (Map.ofSeq
+                          [
+                            "Left", NullValue
+                            "Right", NullValue
+                            "Value", IntValue 4L
+                          ])
+                      "Right",
+                        ObjectValue
+                          (Map.ofSeq
+                            [
+                              "Left", NullValue
+                              "Right", NullValue
+                              "Value", IntValue 5L
+                            ])
+                      "Value", IntValue 3L
+                    ])
+                "Right",
+                  ObjectValue
+                    (Map.ofSeq [
+                      "Left", NullValue
+                      "Right", NullValue
+                      "Value", IntValue 6L
+                    ])
+                "Value", IntValue 2L
+            ])
+        "Value", IntValue 1L
+      ])
+
+  serializer tree |> equals expected
