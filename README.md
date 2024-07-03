@@ -58,7 +58,7 @@ See the [AspNetCore/README.md](src/FSharp.Data.GraphQL.Server.AspNetCore/README.
 
 ### GraphiQL client
 
-Go to the [GraphiQL sample directory](https://github.com/bazingatechnologies/FSharp.Data.GraphQL/tree/dev/samples/graphiql-client). In order to run it, build and run the [Star Wars API sample project](https://github.com/bazingatechnologies/FSharp.Data.GraphQL/tree/dev/samples/star-wars-api) with Debug settings - this will create a Giraffe server compatible with the GraphQL spec, running on port 8086. Then what you need is to run node.js graphiql frontend. To do so, run `npm i` to get all dependencies, and then run `npm run serve | npm run dev` - this will start a webpack server running on [http://localhost:8090/](http://localhost:8090/) . Visit this link, and GraphiQL editor should appear. You may try it by applying following query:
+Go to the [GraphiQL sample directory](https://github.com/fsprojects/FSharp.Data.GraphQL/tree/dev/samples/graphiql-client). In order to run it, build and run the [Star Wars API sample project](https://github.com/fsprojects/FSharp.Data.GraphQL/tree/dev/samples/star-wars-api) with Debug settings - this will create a Giraffe server compatible with the GraphQL spec, running on port 8086. Then what you need is to run node.js graphiql frontend. To do so, run `npm i` to get all dependencies, and then run `npm run serve | npm run dev` - this will start a webpack server running on [http://localhost:8090/](http://localhost:8090/) . Visit this link, and GraphiQL editor should appear. You may try it by applying following query:
 
 ```graphql
 {
@@ -81,7 +81,7 @@ Go to the [GraphiQL sample directory](https://github.com/bazingatechnologies/FSh
 
 ### Relay.js starter kit
 
-A [second sample](https://github.com/bazingatechnologies/FSharp.Data.GraphQL/tree/dev/samples/relay-starter-kit) is a F#-backed version of of popular Relay Starter Kit - an example application using React.js + Relay with Relay-compatible server API.
+A [second sample](https://github.com/fsprojects/FSharp.Data.GraphQL/tree/dev/samples/relay-starter-kit) is a F#-backed version of of popular Relay Starter Kit - an example application using React.js + Relay with Relay-compatible server API.
 
 To run it, build `FSharp.Data.GraphQL` and `FSharp.Data.GraphQL.Relay` projects using Debug settings. Then start server by running `server.fsx` script in your FSI - this will start a relay-compatible F# server on port 8083. Then build node.js frontend by getting all dependencies (`npm i`) and running it (`npm run serve | npm run dev`) - this will start webpack server running React application using Relay for managing application state. You can visit it on [http://localhost:8083/](http://localhost:8083/) .
 
